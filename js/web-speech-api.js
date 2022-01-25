@@ -1,3 +1,74 @@
+
+function diff_algorithm(raw_input, split_eng_word = true) {
+  let input = raw_input.sort((a,b) => b.length - a.length);;
+  if (input.length == 0 || input[0].length == 0) return [];
+
+  let rtn = [];
+  let buf_str = "";
+  let buf_eng = /[A-Za-z]/.test(input[0][0]);
+  
+  let index = new Array(input.length).fill(0);
+
+  while (index[0] < input[0].length) {
+    let str_0_char = input[0][index[0]];   
+    if (input.every((val, i) => 
+                    (!i || val[index[i]] == str_0_char) &&
+                    (split_eng_word || !(buf_eng != (buf_eng = /[A-Za-z]/.test(val[index[i]])) && 
+                                         buf_eng == true))
+       )) {
+      index.forEach((_, i) => index[i]++);
+      buf_str += str_0_char;
+      continue;
+    }
+
+    rtn.push([buf_str]);
+    buf_str = "";
+
+    let all_base_end = input.length;
+    let the_best_find_index = [];
+    let the_best_find_total = 100000000;
+
+    input.forEach((base_str, base) => {
+      let k = index[base] + 1;
+      for (; k < base_str.length; k++) {
+        if (!split_eng_word && /[A-Za-z]/.test(base_str[k])) continue;
+        let find_index = new Array(input.length).fill(0);
+        let find_total = 0;
+
+        let all_find = input.every((val, j) => {
+          find_index[j] = val.indexOf(base_str[k], index[j]);
+          find_total = Math.max(find_total, find_index[j] - index[j]);
+          return find_index[j] != -1;
+        });
+
+        if (all_find && find_total < the_best_find_total) {
+          the_best_find_index = find_index;
+          the_best_find_total = find_total;
+          break;
+        }
+      }
+
+      all_base_end -= !(k < base_str.length);
+    });
+    
+    let buf = [];
+    if (all_base_end == 0) {
+      input.forEach((val, i) => buf.push(val.substring(index[i])));
+      rtn.push(buf);
+      return rtn;
+    }
+    input.forEach((val, i) => buf.push(val.substring(index[i], index[i] = the_best_find_index[i])));
+    rtn.push(buf);
+  }
+  
+  rtn.push([buf_str]);    
+  return rtn;
+}
+
+function filter_duplicate(input) {
+  return input.map(x => [...new Set(x)]).filter(x => x.length != 0 && (x.length != 1 || x[0] != ""));
+}
+
 var messages = {
   "start": {
     msg: 'Click on the microphone icon and begin speaking.',
@@ -54,6 +125,8 @@ $( document ).ready(function() {
     recognition.continuous = true;
     recognition.interimResults = true;
 
+    recognition.maxAlternatives = 20;
+
     recognition.onstart = function() {
       recognizing = true;
       showInfo('speak_now');
@@ -104,6 +177,10 @@ $( document ).ready(function() {
       var interim_transcript = '';
       for (var i = event.resultIndex; i < event.results.length; ++i) {
         if (event.results[i].isFinal) {
+          var res = [].concat(...event.results[i]).map(({transcript})=>transcript);
+          console.log(filter_duplicate(diff_algorithm(res, false)));
+          console.log(event.results)
+
           final_transcript += event.results[i][0].transcript;
         } else {
           interim_transcript += event.results[i][0].transcript;
