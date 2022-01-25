@@ -103,6 +103,7 @@ var messages = {
 }
 
 var final_transcript = '';
+var tokens_str = '';
 var recognizing = false;
 var ignore_onend;
 var start_timestamp;
@@ -178,8 +179,11 @@ $( document ).ready(function() {
       for (var i = event.resultIndex; i < event.results.length; ++i) {
         if (event.results[i].isFinal) {
           var res = [].concat(...event.results[i]).map(({transcript})=>transcript);
-          console.log(filter_duplicate(diff_algorithm(res, false)));
-          console.log(event.results)
+
+          var tokens = filter_duplicate(diff_algorithm(res, false));
+          tokens_str += tokens.map(x => `<span contenteditable="true">${x[0]}</span>`).join("");
+          console.log(tokens);
+          console.log(tokens_str);
 
           final_transcript += event.results[i][0].transcript;
         } else {
@@ -189,6 +193,8 @@ $( document ).ready(function() {
       final_transcript = capitalize(final_transcript);
       final_span.innerHTML = linebreak(final_transcript);
       interim_span.innerHTML = linebreak(interim_transcript);
+
+      jerryResults.innerHTML = tokens_str;
     };
   }
 });
@@ -253,6 +259,7 @@ $("#start_button").click(function () {
     return;
   }
   final_transcript = '';
+  tokens_str = '';
   recognition.lang = select_dialect.value;
   recognition.start();
   ignore_onend = false;
