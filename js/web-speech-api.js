@@ -4,25 +4,25 @@ function diff_algorithm(raw_input, split_eng_word = true) {
   if (input.length == 0 || input[0].length == 0) return [];
 
   let rtn = [];
-  let buf_str = "";
   let buf_eng = /[A-Za-z]/.test(input[0][0]);
-  
-  let index = new Array(input.length).fill(0);
 
-  while (index[0] < input[0].length) {
-    let str_0_char = input[0][index[0]];   
+  let index = new Array(input.length).fill(0);
+  let batch_match_count = 0;
+
+  while (index[0] + batch_match_count < input[0].length) {
+    let str_0_char = input[0][index[0] + batch_match_count];
     if (input.every((val, i) => 
-                    (!i || val[index[i]] == str_0_char) &&
-                    (split_eng_word || !(buf_eng != (buf_eng = /[A-Za-z]/.test(val[index[i]])) && 
+                    (!i || val[index[i] + batch_match_count] == str_0_char) &&
+                    (split_eng_word || !(buf_eng != (buf_eng = /[A-Za-z]/.test(val[index[i] + batch_match_count])) && 
                                          buf_eng == true))
-       )) {
-      index.forEach((_, i) => index[i]++);
-      buf_str += str_0_char;
+                   )) {
+      batch_match_count++;
       continue;
     }
 
-    rtn.push([buf_str]);
-    buf_str = "";
+    rtn.push([input[0].substring(index[0], index[0] + batch_match_count)]);
+    input.forEach((val, i) => index[i] += batch_match_count);
+    batch_match_count = 0;
 
     let all_base_end = input.length;
     let the_best_find_index = [];
@@ -50,18 +50,19 @@ function diff_algorithm(raw_input, split_eng_word = true) {
 
       all_base_end -= !(k < base_str.length);
     });
-    
-    let buf = [];
+
     if (all_base_end == 0) {
-      input.forEach((val, i) => buf.push(val.substring(index[i])));
-      rtn.push(buf);
-      return rtn;
+      break;
     }
+
+    let buf = [];
     input.forEach((val, i) => buf.push(val.substring(index[i], index[i] = the_best_find_index[i])));
     rtn.push(buf);
   }
-  
-  rtn.push([buf_str]);    
+
+  let buf = [];
+  input.forEach((val, i) => buf.push(val.substring(index[i])));
+  rtn.push(buf);
   return rtn;
 }
 
